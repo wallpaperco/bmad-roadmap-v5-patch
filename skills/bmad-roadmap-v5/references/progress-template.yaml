@@ -1,0 +1,83 @@
+# BMAD Roadmap v5 — progress template
+# Copied to {project-root}/_bmad-output/roadmap-progress.yaml on first activation.
+# Updated by the orchestrator at each phase / story transition.
+
+project_name: "{project-name}"
+current_phase: 1
+started: "{today-ISO-date}"
+updated: "{today-ISO-date}"
+patch: "bmad-roadmap-v5"
+
+phases:
+  1-discover:
+    status: in-progress     # in-progress | complete | pending
+    # completed: "YYYY-MM-DD"
+    # notes: |
+    #   anything worth surfacing on resume
+
+  2-ux-design:
+    status: pending
+    # artifact: "_bmad-output/planning-artifacts/ux-design-specification.md"
+    # journeys_count: <int>
+
+  3-epics-stories:
+    status: pending
+    # epics_count: <int>
+    # stories_count: <int>
+    # buildable_stories: <int>
+    # research_stories: <int>
+    # fr_coverage: "N/M (X%)"
+    # readiness_check: pass | fail
+    # artifacts:
+    #   epics: "_bmad-output/planning-artifacts/epics.md"
+    #   stories: "_bmad-output/implementation-artifacts/stories/"
+    #   readiness_report: "_bmad-output/planning-artifacts/implementation-readiness-report-YYYY-MM-DD.md"
+
+  4-sprint-planning:
+    status: pending
+    # artifact: "_bmad-output/implementation-artifacts/sprint-status.yaml"
+    # stories_ordered: <int>
+
+  5-build:
+    status: pending
+    first_epic_setup_done: false   # /bmad-testarch-framework + /bmad-testarch-ci done at first epic start
+    # current_epic: <N>
+    # current_story: "<X.Y>"
+    # current_step: <1-9>          # story-protocol step (see references/story-protocol.md)
+    epics: {}                      # filled per epic — see schema below
+
+  6-deploy:
+    status: pending
+    # prod_url: "https://example.com"
+    # deployed_at: "YYYY-MM-DDThh:mm"
+    # caddy_config_path: "/opt/caddy/Caddyfile"
+    # github_actions_workflow: ".github/workflows/deploy.yml"
+
+  7-harden:
+    status: pending
+    # nfr_status: <pass | warn | fail>
+    # test_review_findings: <int>
+    # e2e_journeys_covered: <N/M>
+
+  8-evolve:
+    status: pending
+    # last_business_change: "YYYY-MM-DD"
+
+# ─── Phase 5 epics schema (filled as epics start) ────────────────
+# epics:
+#   1:
+#     name: "Epic name"
+#     status: in-progress         # pending | in-progress | complete | skipped
+#     started: "YYYY-MM-DD"
+#     stories_total: <int>
+#     stories_completed: <int>
+#     current_story: "<X.Y>"
+#     retro_done: false
+#     trace_done: false
+#     stories:
+#       "1.1":
+#         status: shipped           # pending | in-progress | building | review | shipped
+#         branch: "epic-1/story-1.1-slug"
+#         pr_url: "https://github.com/org/repo/pull/N"
+#         shipped_at: "YYYY-MM-DDThh:mm"
+#         commit_sha: "abc1234"
