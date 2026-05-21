@@ -61,9 +61,9 @@ See [references/story-protocol.md](skills/bmad-roadmap-v5/references/story-proto
 2. **Saneh** — full-stack build (UI + API + DB + seeder + tests). Starts dev server. Outputs **AC Implementation Map**.
 3. **AC-Compliance check** — automated script verifies every AC in the story file has an entry in Saneh's map. Halts on any missing AC.
 4. **User Review [PAUSE]** — orchestrator prints `/impeccable live` iteration prompt for a new chat. User iterates visually until satisfied, returns and types `approved`.
-5. **`/simplify`** — code-simplifier pass over the story diff.
-6. **`/bmad-code-review`** — adversarial code review (Blind Hunter + Edge Case Hunter + Acceptance Auditor).
-7. **PR Review (3 agents in parallel)** — pr-review-toolkit (code-reviewer + comment-analyzer + silent-failure-hunter + type-design-analyzer).
+5. **Simplify (in-context skills)** — sequential `bmad-light-review-code-reuse` + `code-quality` + `efficiency`. Autonomous (no user prompts). Findings auto-applied per severity policy; judgment calls logged to story file's `## Autonomous Decisions` section instead of pausing.
+6. **Code Review (in-context skills)** — sequential `bmad-review-adversarial-general` (Blind Hunter) + `bmad-review-edge-case-hunter` + `bmad-light-review-acceptance`. Autonomous, same DECIDE-AND-LOG pattern.
+7. **PR Review (in-context skills)** — sequential `bmad-light-review-silent-failure` + `bmad-light-review-pr-tests`. Autonomous, same pattern. (Legacy `pr-review-toolkit` agents — code-reviewer / type-design-analyzer / comment-analyzer — intentionally dropped; invoke manually if a specific story needs them.)
 8. **Verify** — typecheck + lint + tests.
 9. **`/ship`** — commit + push + open PR + wait CI + merge.
 

@@ -21,7 +21,7 @@
 | Phases | 9 | **8** |
 | Phase 4 Claude Design loop | per-epic, manual browser work | **REMOVED** |
 | Phase 5 Sprint Planning | separate phase | **separate (renumbered to 4)** |
-| Story Protocol steps | 9 (with Naqed Compliance + Critique + Audit) | **9** (Naqed → `AC-Compliance` script + `/impeccable live` iteration + automated PR-review-toolkit) |
+| Story Protocol steps | 9 (with Naqed Compliance + Critique + Audit) | **9** (Naqed → `AC-Compliance` script + `/impeccable live` iteration + sequential in-context review skills — no agents) |
 | Saneh prompt | reads Design Reference block + WebFetches bundle | reads UX spec §journey + uses design system already wired in codebase |
 | Visual iteration | inside Claude Design (manual) | `/impeccable live` on the running dev server (in a new chat — orchestrator prints a paste-ready prompt) |
 | `design-progress.yaml` | required | **not used** |
@@ -45,21 +45,28 @@ Both `bmad-roadmap-v2` and `bmad-roadmap-v5` coexist as separate skills — inst
 
 ## Patch contents
 
+The patch is **self-contained** — it bundles the v5 orchestrator + the 8 in-context review skills that the Story Protocol depends on. No external skill dependencies.
+
 ```
-skills/bmad-roadmap-v5/
-├── SKILL.md                              # orchestrator — reads progress, routes to phase
-├── scripts/
-│   └── ac-compliance-check.sh            # lightweight grep-based AC-implementation check
-└── references/
-    ├── progress-template.yaml            # 8 phases, no design-loop tracking
-    ├── story-protocol.md                 # 9 steps per story — Saneh rewritten for code-first
-    ├── handoff-iteration-prompt.md       # template for /impeccable live (paste in new chat)
-    ├── phase-01-discover.md
-    ├── phase-02-ux-design.md
-    ├── phase-03-epics-stories.md
-    ├── phase-04-sprint-planning.md
-    ├── phase-05-build.md
-    ├── phase-06-deploy.md
-    ├── phase-07-harden.md
-    └── phase-08-evolve.md
+skills/
+├── bmad-roadmap-v5/                      # orchestrator (the one you invoke as /bmad-roadmap-v5)
+│   ├── SKILL.md
+│   ├── scripts/
+│   │   └── ac-compliance-check.sh        # AC-implementation check (Story Protocol Step 3)
+│   └── references/
+│       ├── progress-template.yaml        # 8 phases, no design-loop tracking
+│       ├── story-protocol.md             # 9 steps per story — Saneh + in-context review skills
+│       ├── handoff-iteration-prompt.md   # template for /impeccable live (paste in new chat)
+│       └── phase-{01..08}-*.md           # one per phase
+│
+├── bmad-light-review-code-reuse/         # Story Protocol Step 5 (Simplify)
+├── bmad-light-review-code-quality/       # Story Protocol Step 5
+├── bmad-light-review-efficiency/         # Story Protocol Step 5
+├── bmad-review-adversarial-general/      # Story Protocol Step 6 (Code Review — Blind Hunter)
+├── bmad-review-edge-case-hunter/         # Story Protocol Step 6
+├── bmad-light-review-acceptance/         # Story Protocol Step 6
+├── bmad-light-review-silent-failure/     # Story Protocol Step 7 (PR Review)
+└── bmad-light-review-pr-tests/           # Story Protocol Step 7
 ```
+
+**Co-existence with other BMAD roadmap patches:** if you also have `bmad-figma-patch` or `bmad-roadmap-light-patch` installed, the 8 review skills are SHARED — re-installing v5 overwrites them with this patch's bundled copies. All variants are kept content-identical in source, so re-install is safe (no behavior drift between roadmaps that share these skills).

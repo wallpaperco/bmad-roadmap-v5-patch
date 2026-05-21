@@ -1,6 +1,6 @@
 # Phase 5 — Build
 
-**Goal:** Implement every story end-to-end. Visual iteration via `/impeccable live` on the running dev server. Each story = own branch + PR.
+**Goal:** Implement every story end-to-end. Visual iteration via `/impeccable live` on the running dev server. **Branch per epic. One PR per epic.**
 
 **Exit:** every story in `sprint-status.yaml` is `shipped` (and thus `done`).
 
@@ -8,9 +8,9 @@
 
 ## Sub-step A — First-epic-only setup
 
-Runs ONCE before the first story of the first epic. Sets up the test infrastructure that every later story will use.
+Runs ONCE before the first story of the first epic. Sets up the test infrastructure every later story uses.
 
-1. **`/bmad-testarch-framework`** — initialize Playwright + test infrastructure (E2E + component tests + visual regression baseline).
+1. **`/bmad-testarch-framework`** — initialize Playwright + test infrastructure (component tests + visual regression baseline). NO E2E suite expansion here — kept minimal per Phase 5 test discipline.
 2. **`/bmad-testarch-ci`** — scaffold the CI quality pipeline (`.github/workflows/quality.yml` or equivalent).
 
 Mark `roadmap-progress.yaml: 5-build.first_epic_setup_done: true`.
@@ -21,48 +21,55 @@ Mark `roadmap-progress.yaml: 5-build.first_epic_setup_done: true`.
 
 1. Read `sprint-status.yaml`.
 2. Find the next story with `status: backlog` (respecting topological order).
-3. Verify its `depends_on` are all `shipped`.
+3. Verify its `depends_on` are all `committed` or `shipped`.
 4. Set `roadmap-progress.yaml: 5-build.current_story: "{X.Y}"` and `current_step: 1`.
 5. Enter the Story Protocol (see `./story-protocol.md`).
 
 ---
 
-## Sub-step C — Story Protocol (9 steps)
+## Sub-step C — Story Protocol (9 steps, epic-branched)
 
 Full protocol in `./story-protocol.md`. Summary:
 
-1. **Branch** — `epic-{N}/story-{X.Y}-{slug}`
-2. **Saneh — Full-Stack Build** (rewrites the v2 Saneh — reads UX spec + design system from codebase; no Claude Design bundle)
+1. **Branch** — `epic-{N}` (created on first story of the epic; subsequent stories check out the same branch)
+2. **Saneh — Full-Stack Build** — reads UX spec + design system from codebase. Test Writing Discipline enforced (1-3 tests per AC, no E2E, skip visual-only ACs).
 3. **AC-Compliance check** (automated script — verifies every story AC has an entry in Saneh's Implementation Map)
-4. **User Review [PAUSE]** — orchestrator prints `/impeccable live` iteration prompt for a new chat; waits for `approved`
-5. **`/simplify`** — code-simplifier pass
-6. **`/bmad-code-review`** — adversarial code review
-7. **PR Review** — pr-review-toolkit (3 agents in parallel)
+4. **User Review [PAUSE]** — orchestrator prints `/impeccable live` iteration prompt for a new chat; waits for `approved` (**only intentional stop in the protocol**). Signals: `approved` or `/bmad-business-change`. `rebuild:` is intentionally absent — user iterates in the other chat directly.
+5. **Simplify** — sequential in-context skills (code-reuse + code-quality + efficiency) — autonomous, no user prompts
+6. **Code Review** — sequential in-context skills (adversarial-general / Blind Hunter + edge-case-hunter + light-review-acceptance) — autonomous, no user prompts
+7. **PR Review** — single in-context skill (light-review-silent-failure). pr-tests reviewer retired in this revision to avoid over-testing pressure.
 8. **Verify** — typecheck + lint + tests
-9. **`/ship`** — commit + push + PR + merge
+9. **`/commit-story`** — local commit on `epic-{N}` branch. **NO push, NO PR.** Push + PR happen once at end-of-epic.
 
-After Step 9, the story is marked `shipped` in both `sprint-status.yaml` and `roadmap-progress.yaml`. The orchestrator prints a short notice and STOPS — the user decides when to start the next story.
+Steps 5–7 use the DECIDE-AND-LOG pattern (any judgment call is recorded in the story file's "## Autonomous Decisions" section instead of pausing for user input). The user reviews these decisions at PR review time (end-of-epic).
+
+After Step 9, the story is marked `committed` in both `sprint-status.yaml` and `roadmap-progress.yaml`. The orchestrator prints a short notice and STOPS — the user decides when to start the next story.
 
 ---
 
 ## Sub-step D — End-of-epic
 
-Triggered when the last story of an epic ships. Run:
+Triggered when the last story of an epic is `committed`. Run:
 
-1. **`/bmad-retrospective`** — extract lessons + assess success metrics
-2. **`/bmad-testarch-trace`** — produce traceability matrix (AC ↔ test) + quality-gate decision
+1. **`/bmad-testarch-trace`** — produce traceability matrix (AC ↔ test) + quality-gate decision for the entire epic.
+2. **`/ship-epic`** — rebase main → push `epic-{N}` → open one PR for the whole epic → wait for CI → squash-merge → sync local main.
 
-Update `roadmap-progress.yaml`:
+`/ship-epic` updates `roadmap-progress.yaml`:
 ```yaml
 5-build:
   epics:
     {N}:
-      retro_done: true
+      status: shipped
       trace_done: true
-      completed: "{today}"
+      shipped_at: "{today}"
+      pr_url: "<PR URL>"
 ```
 
+It also flips every story in the epic from `committed` → `shipped`.
+
 Advance to the next epic's first story (Sub-step B) — or, if it was the last epic, mark Phase 5 complete and advance to Phase 6.
+
+**Retrospective is intentionally NOT part of this flow** — removed in this revision to keep end-of-epic lean. If you want a retro for a specific epic, invoke `/bmad-retrospective` manually before `/ship-epic`.
 
 ---
 
@@ -84,19 +91,33 @@ If the user realises the design system needs new tokens or wrappers:
 - Bump the design-system version (if it's a separate package)
 - Resume the story at Step 2 (Saneh re-runs with the new tokens in scope)
 
-### CI failure on `/ship`
+### CI failure on `/ship-epic`
 
-If the merged PR triggers a deploy that fails (rare on Phase 5 since Phase 6 is the deploy phase, but possible for projects with continuous-deployment-from-main):
-- Revert the merge via `git revert <merge-sha>` + force-push (with user confirmation per CLAUDE.md)
-- Reset the story's `current_step` to `8` (Verify) and diagnose
+If `/ship-epic` hits a CI failure on the epic PR:
+- `/ship-epic` HALTs at "Wait for CI" — does not merge red
+- Fix locally on `epic-{N}` branch
+- Push the fix
+- CI re-runs
+- Continue `/ship-epic` from the wait step
+
+If CI continues to fail and you need to investigate a single story without unwinding the entire epic:
+- `git log --oneline` on `epic-{N}` to find the culprit commit
+- Drop into a hotfix workflow OR revert specific commits (with care — the epic is locally committed but not pushed yet, so `git reset` is safe)
+
+### Branch needs rebase mid-epic
+
+If main moves while you're building epic-{N} (someone else merges another epic):
+- `git fetch origin && git rebase origin/main` at any point during the epic
+- Resolve conflicts locally
+- Continue building stories on the rebased branch
 
 ---
 
 ## Phase exit checklist
 
 - [ ] Every story in `sprint-status.yaml` has `status: shipped`
-- [ ] Every epic's `retro_done: true` and `trace_done: true`
-- [ ] No CRITICAL findings from code review or PR review left unresolved
+- [ ] Every epic's `trace_done: true` and `status: shipped`
+- [ ] No CRITICAL findings from code review left unresolved
 - [ ] `pnpm typecheck && pnpm lint && pnpm test` green on `main`
 
 Advance to Phase 6.

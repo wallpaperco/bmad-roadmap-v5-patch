@@ -57,7 +57,7 @@ Design system: {design-system-pointer}
 
 ## When you're done
 Save changes (the dev server has HMR — they're live). Then go back to the main chat (where Saneh was) and reply with one of:
-- `approved` — Saneh moves to /simplify → code-review → ship
+- `approved` — protocol moves to Simplify → Code Review → PR Review → Verify → Ship (Steps 5–9, fully autonomous)
 - `rebuild: <one-line reason>` — Saneh re-runs the build with your note appended
 ```
 

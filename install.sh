@@ -1,13 +1,14 @@
 #!/bin/bash
 # BMAD Roadmap v5 patch — installer
 #
-# Idempotent. Copies (or symlinks with --symlink) the bmad-roadmap-v5 skill
-# into the target project's .claude/skills/ directory.
+# Idempotent. Copies (or symlinks with --symlink) the v5 orchestrator skill +
+# the 8 in-context review skills it depends on into the target project's
+# .claude/skills/ directory.
 #
 # Modes:
 #   (default)    Fresh install or update — overwrites managed files.
 #   --symlink    Dev mode: symlink instead of copy (for iterating on the patch).
-#   --uninstall  Remove the skill from .claude/skills/.
+#   --uninstall  Remove all v5 skills from .claude/skills/.
 #   --status     Show install state. Read-only.
 
 set -e
@@ -15,9 +16,27 @@ set -e
 PATCH_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(pwd)"
 CLAUDE_SKILLS_DIR="$PROJECT_DIR/.claude/skills"
-SKILL_NAME="bmad-roadmap-v5"
-SKILL_SRC="$PATCH_DIR/skills/$SKILL_NAME"
-SKILL_DST="$CLAUDE_SKILLS_DIR/$SKILL_NAME"
+
+# Skills bundled with this patch. First entry is the orchestrator;
+# the rest are in-context review skills invoked by the story protocol.
+SKILLS=(
+    bmad-roadmap-v5
+    bmad-light-review-code-reuse
+    bmad-light-review-code-quality
+    bmad-light-review-efficiency
+    bmad-review-adversarial-general
+    bmad-review-edge-case-hunter
+    bmad-light-review-acceptance
+    bmad-light-review-silent-failure
+    commit-story
+    ship-epic
+)
+
+# Skills retired from this revision (will be removed on install if present):
+#   bmad-light-review-pr-tests  — removed; was driving over-testing pressure
+RETIRED_SKILLS=(
+    bmad-light-review-pr-tests
+)
 
 MODE="fresh"
 for arg in "$@"; do
@@ -44,18 +63,21 @@ if [ "$MODE" = "status" ]; then
     cyan "═══ bmad-roadmap-v5 install status ═══"
     echo "Project:       $PROJECT_DIR"
     echo "Patch source:  $PATCH_DIR"
-    echo "Skill target:  $SKILL_DST"
     echo
-    if [ -L "$SKILL_DST" ]; then
-        green "✓ Installed as symlink → $(readlink "$SKILL_DST")"
-    elif [ -d "$SKILL_DST" ]; then
-        green "✓ Installed as copy"
-        if [ -f "$SKILL_DST/.installed_at" ]; then
-            echo "  Installed at: $(cat "$SKILL_DST/.installed_at")"
+    for skill in "${SKILLS[@]}"; do
+        dst="$CLAUDE_SKILLS_DIR/$skill"
+        if [ -L "$dst" ]; then
+            green "✓ $skill (symlink → $(readlink "$dst"))"
+        elif [ -d "$dst" ]; then
+            if [ -f "$dst/.installed_at" ]; then
+                green "✓ $skill (copy, installed $(cat "$dst/.installed_at"))"
+            else
+                green "✓ $skill (copy)"
+            fi
+        else
+            yellow "✗ $skill (not installed)"
         fi
-    else
-        yellow "✗ Not installed in this project"
-    fi
+    done
     echo
     if git -C "$PATCH_DIR" rev-parse HEAD >/dev/null 2>&1; then
         echo "Patch commit:  $(git -C "$PATCH_DIR" rev-parse --short HEAD) — $(git -C "$PATCH_DIR" log -1 --format=%s)"
@@ -65,12 +87,21 @@ fi
 
 # ─── Uninstall mode ──────────────────────────────────────────────
 if [ "$MODE" = "uninstall" ]; then
-    cyan "═══ Uninstalling bmad-roadmap-v5 ═══"
-    if [ -L "$SKILL_DST" ] || [ -d "$SKILL_DST" ]; then
-        rm -rf "$SKILL_DST"
-        green "✓ Removed $SKILL_DST"
+    cyan "═══ Uninstalling bmad-roadmap-v5 (orchestrator + 8 review skills) ═══"
+    removed=0
+    for skill in "${SKILLS[@]}"; do
+        dst="$CLAUDE_SKILLS_DIR/$skill"
+        if [ -L "$dst" ] || [ -d "$dst" ]; then
+            rm -rf "$dst"
+            green "✓ Removed $skill"
+            removed=$((removed + 1))
+        fi
+    done
+    if [ "$removed" = "0" ]; then
+        yellow "Nothing to uninstall — no v5 skills present at $CLAUDE_SKILLS_DIR"
     else
-        yellow "Nothing to uninstall — skill not present at $SKILL_DST"
+        echo
+        green "Done. Removed $removed skill(s)."
     fi
     exit 0
 fi
@@ -78,30 +109,55 @@ fi
 # ─── Fresh / symlink install ─────────────────────────────────────
 mkdir -p "$CLAUDE_SKILLS_DIR"
 
-if [ ! -d "$SKILL_SRC" ]; then
-    red "✗ Source skill not found at $SKILL_SRC"
-    red "  Make sure you're running this from a clean clone of the patch repo."
-    exit 1
-fi
+cyan "═══ Installing bmad-roadmap-v5 patch (${#SKILLS[@]} skills, $MODE) ═══"
+echo
 
-# Clean previous install
-if [ -L "$SKILL_DST" ] || [ -d "$SKILL_DST" ]; then
-    rm -rf "$SKILL_DST"
-fi
+# Remove any retired skills from a prior install
+retired_removed=0
+for skill in "${RETIRED_SKILLS[@]}"; do
+    dst="$CLAUDE_SKILLS_DIR/$skill"
+    if [ -L "$dst" ] || [ -d "$dst" ]; then
+        rm -rf "$dst"
+        yellow "✗ Removed retired skill: $skill"
+        retired_removed=$((retired_removed + 1))
+    fi
+done
+[ "$retired_removed" -gt 0 ] && echo
 
-cyan "═══ Installing bmad-roadmap-v5 ($MODE) ═══"
+installed=0
+for skill in "${SKILLS[@]}"; do
+    src="$PATCH_DIR/skills/$skill"
+    dst="$CLAUDE_SKILLS_DIR/$skill"
 
-if [ "$MODE" = "symlink" ]; then
-    ln -s "$SKILL_SRC" "$SKILL_DST"
-    green "✓ Symlinked $SKILL_DST → $SKILL_SRC"
-else
-    cp -R "$SKILL_SRC" "$SKILL_DST"
-    date -u +%FT%TZ > "$SKILL_DST/.installed_at"
-    green "✓ Copied skill into $SKILL_DST"
-fi
+    if [ ! -d "$src" ]; then
+        red "✗ Source skill not found at $src — skipping"
+        continue
+    fi
+
+    # Clean previous install (per-skill, so partial state can't linger)
+    if [ -L "$dst" ] || [ -d "$dst" ]; then
+        rm -rf "$dst"
+    fi
+
+    if [ "$MODE" = "symlink" ]; then
+        ln -s "$src" "$dst"
+        green "✓ Symlinked $skill"
+    else
+        cp -R "$src" "$dst"
+        date -u +%FT%TZ > "$dst/.installed_at"
+        green "✓ Copied   $skill"
+    fi
+    installed=$((installed + 1))
+done
 
 echo
-green "Done. To start: /bmad-roadmap-v5"
+green "Done. Installed $installed skill(s)."
+echo
+green "To start: /bmad-roadmap-v5"
 echo
 yellow "Note: v5 expects the design system to be wired in code (tokens.css + fonts + Egyptian-Native wrappers)."
 yellow "      If you don't have one yet, run v2 (Claude Design) first or set up the design system manually."
+echo
+yellow "Co-existence: if you also have bmad-figma-patch / bmad-roadmap-light-patch installed,"
+yellow "      the review skills are SHARED — re-installing this patch overwrites them with v5's bundled copies."
+yellow "      All variants are kept content-identical in source; re-install is safe."
