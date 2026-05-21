@@ -65,7 +65,9 @@ See [references/story-protocol.md](skills/bmad-roadmap-v5/references/story-proto
 6. **Code Review (in-context skills)** — sequential `bmad-review-adversarial-general` (Blind Hunter, capped at 12 findings) + `bmad-review-edge-case-hunter` + `bmad-light-review-acceptance`. Autonomous, same DECIDE-AND-LOG pattern.
 7. **PR Review (in-context skills)** — `bmad-light-review-silent-failure`. Autonomous, same pattern. (`bmad-light-review-pr-tests` retired earlier — was driving over-testing pressure. Legacy `pr-review-toolkit` agents intentionally dropped; invoke manually if a specific story needs them.)
 8. **Verify** — typecheck + lint + tests.
-9. **`/commit-story`** — local commit on the epic branch. No push, no PR (those happen at end-of-epic via `/ship-epic`).
+9. **`/commit-story`** — local commit on the epic branch. **Step 9.0 calls `bmad-protocol-compliance-check`** which reads the story file's `## Protocol Audit Trail` section and HALTS the commit if any expected step entry is missing. No `--skip-compliance` flag — the gate is mandatory because it's the entire defence against autonomous-skip bugs in `/goal` mode. No push, no PR (those happen at end-of-epic via `/ship-epic`).
+
+**Audit Trail discipline:** every story file ends with a `## Protocol Audit Trail` section. The orchestrator appends one `- [x] Step N <name>` bullet the same turn each step finishes. The compliance check at Step 9.0 grep's this section and verifies the manifest (Saneh + AC-Compliance + User Review + Simplify×2 + Code Review×3 + PR Review×1 + Verify). When a skill is silently skipped, the missing bullet trips the gate at the LOCAL story — not three stories later in a retrospective.
 
 ### End-of-each-epic
 

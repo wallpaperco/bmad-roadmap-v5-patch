@@ -12,6 +12,38 @@ Per-story workflow invoked by Phase 5 (Build). **Branch per epic, not per story.
 
 ---
 
+## Protocol Audit Trail — append-on-completion (NEW, enforced)
+
+Each story file MUST end with a section titled `## Protocol Audit Trail`. As every step finishes, the orchestrator appends one line confirming the step ran. Step 9 (`/commit-story`) calls `bmad-protocol-compliance-check` BEFORE staging files — if any expected entry is missing, the commit is HALTED until the step is actually executed (not just declared done).
+
+**Why it exists:** when running autonomously across a full epic (via `/goal`), individual review skills can get silently skipped. The audit trail + pre-commit gate eliminates that — a fail-loud, fail-LOCAL check catches the gap at the story that introduced it, not three stories later during a retrospective.
+
+**Format:**
+
+```markdown
+## Protocol Audit Trail
+
+- [x] Step 2 Saneh — AC Map (12 ACs mapped, 0 deferred)
+- [x] Step 3 AC-Compliance — PASS
+- [x] Step 4 User Review — approved at 2026-MM-DDTHH:MM
+- [x] Step 5 Simplify
+  - [x] code-reuse — 2 findings, 1 fixed, 1 deferred
+  - [x] code-quality — 8 findings, 5 fixed, 3 deferred
+- [x] Step 6 Code Review
+  - [x] adversarial — 12 findings, 4 fixed, 8 deferred
+  - [x] edge-case-hunter — 15 findings, 3 fixed, 12 deferred
+  - [x] acceptance — 9 findings, 6 fixed, 3 deferred
+- [x] Step 7 PR Review
+  - [x] silent-failure — 7 findings, 5 fixed, 2 deferred
+- [x] Step 8 Verify — typecheck/lint/test PASS
+```
+
+**Bullet shape per skill invocation:** `- [x] <skill-name> — <total> findings, <fixed> fixed, <deferred> deferred`. Use `0 findings, 0 fixed, 0 deferred` when the skill returned "No findings". For non-review steps (Saneh, AC-Compliance, User Review, Verify) use the natural one-line description shown above.
+
+The orchestrator appends each line **the same turn** the corresponding step completes — never batched at the end.
+
+---
+
 ## Step 1 — Branch
 
 ```bash
@@ -158,7 +190,13 @@ CRITICAL RULES:
 - TEST DISCIPLINE: respect the calibrated test rules in step 6. Do not "play it safe" by adding extra tests.
 ```
 
-When Saneh returns, print its Return block verbatim. Mark Step 2 done. Proceed to Step 3 in the same turn.
+When Saneh returns, print its Return block verbatim. **Append to the story file's `## Protocol Audit Trail`:**
+
+```
+- [x] Step 2 Saneh — AC Map ({N} ACs mapped, {D} deferred)
+```
+
+Mark Step 2 done. Proceed to Step 3 in the same turn.
 
 ---
 
@@ -179,7 +217,7 @@ The script:
 4. Bonus: verifies cited file paths exist in the repo (catches hallucinated paths)
 
 Outcomes:
-- **PASS** → mark step done, proceed to Step 4
+- **PASS** → mark step done, proceed to Step 4. **Append to Audit Trail:** `- [x] Step 3 AC-Compliance — PASS`
 - **MISSING-AC** → halt: "AC-X is in the story but absent from Saneh's map. Re-run Saneh with explicit instruction to address AC-X, OR amend the story to defer it (with reason)."
 - **HALLUCINATED-PATH** → halt: "Saneh cited <path> for AC-X but the file doesn't exist. Fix or document."
 
@@ -203,7 +241,7 @@ Waiting for your "approved" signal in this chat…
 
 The orchestrator goes idle. The user iterates in a separate chat — that chat edits files directly. When the user is done, they return and type one of:
 
-- **`approved`** → mark step done, proceed to Step 5. The current file state is what proceeds.
+- **`approved`** → mark step done, proceed to Step 5. The current file state is what proceeds. **Append to Audit Trail:** `- [x] Step 4 User Review — approved at <ISO timestamp>`
 - **`/bmad-business-change ...`** → orchestrator hands off to that skill; on return, Step 2 reruns (the business-change cascade may invalidate the build).
 
 The story state stays at Step 4 until one of those signals lands.
@@ -228,6 +266,13 @@ Invoke each skill in order via the Skill tool. After each skill produces its fin
 2. **Skill:** `bmad-light-review-code-quality` — apply quality + efficiency fixes inline.
 
 If a skill returns "No <X> findings.", move on without changes.
+
+**Append to Audit Trail** (in this order, one bullet per skill):
+```
+- [x] Step 5 Simplify
+  - [x] code-reuse — {total} findings, {fixed} fixed, {deferred} deferred
+  - [x] code-quality — {total} findings, {fixed} fixed, {deferred} deferred
+```
 
 Mark done → Step 6.
 
@@ -267,7 +312,14 @@ After fixes applied:
 ```bash
 pnpm typecheck && pnpm lint
 ```
-Fix any regression before marking done. Go to Step 7.
+Fix any regression. **Append to Audit Trail** (one bullet per skill, in invocation order):
+```
+- [x] Step 6 Code Review
+  - [x] adversarial — {total} findings, {fixed} fixed, {deferred} deferred
+  - [x] edge-case-hunter — {total} findings, {fixed} fixed, {deferred} deferred
+  - [x] acceptance — {total} findings, {fixed} fixed, {deferred} deferred
+```
+Go to Step 7.
 
 ---
 
@@ -291,7 +343,12 @@ After fixes applied:
 ```bash
 pnpm typecheck && pnpm lint && pnpm test
 ```
-Fix any regression before marking done. Go to Step 8.
+Fix any regression. **Append to Audit Trail:**
+```
+- [x] Step 7 PR Review
+  - [x] silent-failure — {total} findings, {fixed} fixed, {deferred} deferred
+```
+Go to Step 8.
 
 ---
 
@@ -303,13 +360,19 @@ Run from project root:
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
-(Or project-specific equivalents.) If any fail → halt + diagnose. Mark done when all green.
+(Or project-specific equivalents.) If any fail → halt + diagnose. **Append to Audit Trail** when all green:
+```
+- [x] Step 8 Verify — typecheck/lint/test PASS
+```
+Mark done.
 
 ---
 
 ## Step 9 — `/commit-story` (local commit, no push)
 
-Invoke `/commit-story` skill. It:
+Invoke `/commit-story` skill. **As its FIRST action it calls `bmad-protocol-compliance-check`** — that skill reads the story file's `## Protocol Audit Trail` section, verifies every expected entry (Steps 2-8) is present, HALTS the commit if anything's missing. The orchestrator MUST complete the missing step before retrying — no bypass flag, no manual override.
+
+Once the gate passes, the skill:
 - Stages specific files Saneh + reviews touched (NEVER `git add -A`)
 - Creates a commit message: `Story {X.Y}: <title>` + body listing the AC Implementation Map summary
 - Commits locally on the `epic-{N}` branch

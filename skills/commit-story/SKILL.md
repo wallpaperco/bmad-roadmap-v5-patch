@@ -26,6 +26,19 @@ If any precondition fails: HALT with a clear diagnosis. Do not silently push thr
 
 ## Execution
 
+### 0. Protocol Compliance Gate (NEW — MANDATORY, no bypass)
+
+**Before staging anything**, invoke `bmad-protocol-compliance-check` via the Skill tool. The check reads the active story file's `## Protocol Audit Trail` section and verifies every expected step entry is present (Saneh → AC-Compliance → User Review → Simplify > 2 skills → Code Review > 3 skills → PR Review > 1 skill → Verify).
+
+If the gate exits with FAIL:
+- Print the structured diagnostic verbatim (do NOT summarize).
+- HALT — do not proceed to staging.
+- The caller (orchestrator) MUST complete the missing step(s), append the resulting bullet(s) to the story file's Audit Trail, then re-invoke `/commit-story`. The gate re-runs first.
+
+There is no `--skip-compliance` flag. The gate is the entire reason this skill exists — bypassing it would silently re-introduce the autonomous-skip class of bugs that prompted its addition.
+
+If the gate exits with PASS, continue to step 1.
+
 ### 1. Inspect changes
 
 ```bash
