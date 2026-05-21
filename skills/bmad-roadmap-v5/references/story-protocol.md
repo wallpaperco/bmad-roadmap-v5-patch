@@ -212,19 +212,20 @@ The story state stays at Step 4 until one of those signals lands.
 
 ## Step 5 — Simplify (sequential review skills, in-context)
 
-Three /simplify review skills run as **skills in the current conversation** — NOT as the `code-simplifier:code-simplifier` Agent. Rationale: the diff is already in this conversation; re-loading it per agent duplicates ~80k tokens per reviewer for no signal gain.
+Two /simplify review skills run as **skills in the current conversation** — NOT as the `code-simplifier:code-simplifier` Agent. Rationale: the diff is already in this conversation; re-loading it per agent duplicates ~80k tokens per reviewer for no signal gain.
+
+**History:** Step 5 used to run THREE skills (reuse / quality / efficiency). The efficiency skill was merged into code-quality in 2026-05 — efficiency was producing only 0-3 findings per story while paying a full skill-call cost, and the categories overlap heavily with quality (both review hot-path bloat, redundant computation, leaky abstractions). The merged code-quality skill now covers 12 categories with a cap of 12 findings.
 
 Invoke each skill in order via the Skill tool. After each skill produces its findings, **apply the patches inline** before invoking the next.
 
-**CONTINUOUS-FLOW RULE:** All three skill invocations + their fixes happen in **one continuous flow**. Do NOT end the turn between skills. Do NOT summarize findings to the user between skills. Each review skill ends with a `--- end of <skill-id> ---` marker — that marker is your cue to immediately invoke the next skill in the same turn.
+**CONTINUOUS-FLOW RULE:** Both skill invocations + their fixes happen in **one continuous flow**. Do NOT end the turn between skills. Do NOT summarize findings to the user between skills. Each review skill ends with a `--- end of <skill-id> ---` marker — that marker is your cue to immediately invoke the next skill in the same turn.
 
 **Auto-fix policy (ZERO user prompts):** CRITICAL + HIGH = always fix. MEDIUM = fix if local/obvious; otherwise defer to `_bmad-output/implementation-artifacts/deferred-work.md` with `source: simplify-v5`. LOW = defer automatically.
 
 **Judgment calls: DECIDE-AND-LOG, never stop-and-ask.** Pick the most-likely-correct interpretation using priority order: (a) PRD ACs for THIS story, (b) UX spec § for this story's journey, (c) architecture doc, (d) prior shipped-story decisions in same area, (e) general principles. Apply the fix. Append entry to the story file's "## Autonomous Decisions" section with: location, options, chosen option, reasoning, reversibility.
 
 1. **Skill:** `bmad-light-review-code-reuse` — apply reuse fixes inline.
-2. **Skill:** `bmad-light-review-code-quality` — apply quality fixes inline.
-3. **Skill:** `bmad-light-review-efficiency` — apply efficiency fixes inline.
+2. **Skill:** `bmad-light-review-code-quality` — apply quality + efficiency fixes inline.
 
 If a skill returns "No <X> findings.", move on without changes.
 

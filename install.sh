@@ -23,19 +23,26 @@ SKILLS=(
     bmad-roadmap-v5
     bmad-light-review-code-reuse
     bmad-light-review-code-quality
-    bmad-light-review-efficiency
     bmad-review-adversarial-general
     bmad-review-edge-case-hunter
     bmad-light-review-acceptance
     bmad-light-review-silent-failure
+    bmad-extract-deferrals
     commit-story
     ship-epic
 )
 
 # Skills retired from this revision (will be removed on install if present):
-#   bmad-light-review-pr-tests  — removed; was driving over-testing pressure
+#   bmad-light-review-pr-tests   — removed; was driving over-testing pressure.
+#   bmad-light-review-efficiency — merged into bmad-light-review-code-quality
+#                                  (2026-05). Efficiency was producing 0-3
+#                                  findings/story while paying a full skill-
+#                                  call cost; categories overlap heavily with
+#                                  quality. Code-quality now covers 12 categories
+#                                  with a cap of 12 findings.
 RETIRED_SKILLS=(
     bmad-light-review-pr-tests
+    bmad-light-review-efficiency
 )
 
 MODE="fresh"

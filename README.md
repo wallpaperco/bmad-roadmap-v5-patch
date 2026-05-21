@@ -60,13 +60,18 @@ skills/
 │       └── phase-{01..08}-*.md           # one per phase
 │
 ├── bmad-light-review-code-reuse/         # Story Protocol Step 5 (Simplify)
-├── bmad-light-review-code-quality/       # Story Protocol Step 5
-├── bmad-light-review-efficiency/         # Story Protocol Step 5
+├── bmad-light-review-code-quality/       # Story Protocol Step 5 (includes efficiency cats)
 ├── bmad-review-adversarial-general/      # Story Protocol Step 6 (Code Review — Blind Hunter)
 ├── bmad-review-edge-case-hunter/         # Story Protocol Step 6
 ├── bmad-light-review-acceptance/         # Story Protocol Step 6
 ├── bmad-light-review-silent-failure/     # Story Protocol Step 7 (PR Review)
-└── bmad-light-review-pr-tests/           # Story Protocol Step 7
+├── bmad-extract-deferrals/               # End-of-epic — extract deferrals from commits
+├── commit-story/                          # v5 per-story commit helper
+└── ship-epic/                             # v5 end-of-epic ship flow
 ```
 
-**Co-existence with other BMAD roadmap patches:** if you also have `bmad-figma-patch` or `bmad-roadmap-light-patch` installed, the 8 review skills are SHARED — re-installing v5 overwrites them with this patch's bundled copies. All variants are kept content-identical in source, so re-install is safe (no behavior drift between roadmaps that share these skills).
+**Retired in this revision:**
+- `bmad-light-review-efficiency` — merged into `bmad-light-review-code-quality` (2026-05). The efficiency-only skill was producing 0-3 findings per story while paying a full skill-call cost; categories overlap with quality. The merged skill covers 12 categories with a 12-finding cap.
+- `bmad-light-review-pr-tests` — removed earlier; was driving over-testing pressure.
+
+**Co-existence with other BMAD roadmap patches:** if you also have `bmad-figma-patch` or `bmad-roadmap-light-patch` installed, the review skills are SHARED — re-installing v5 overwrites them with this patch's bundled copies. The retired skills are removed automatically.

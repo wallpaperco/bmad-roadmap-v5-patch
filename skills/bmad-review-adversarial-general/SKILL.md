@@ -24,17 +24,18 @@ description: 'Perform a Cynical Review and produce a findings report. Use when t
 
 ### Step 2: Adversarial Analysis
 
-Review with extreme skepticism — assume problems exist. Find at least ten issues to fix or improve in the provided content.
+Review with extreme skepticism — assume problems exist. Find up to **twelve** issues to fix or improve in the provided content, prioritised by severity (CRITICAL first, then HIGH, MEDIUM, LOW). Stop at twelve even if more findings exist — the orchestrator that consumes this output triages each finding, and "noise floor" findings beyond the top-twelve cost triage time more than they catch real bugs.
 
 ### Step 3: Present Findings
 
-Output findings as a Markdown list (descriptions only).
+Output findings as a Markdown list (descriptions only). Order by severity descending so the orchestrator's auto-fix policy (CRITICAL/HIGH inline) hits the right findings first.
 
 
 ## HALT CONDITIONS
 
-- HALT if zero findings — this is suspicious, re-analyze or ask for guidance
-- HALT if content is empty or unreadable
+- HALT if zero findings — this is suspicious, re-analyze or ask for guidance.
+- HALT if content is empty or unreadable.
+- **Cap at twelve findings**; if more legitimate findings existed past the cap, note their count at the bottom (e.g. `_3 lower-severity findings omitted per skill cap_`). Do not list them.
 
 
 ## Return contract (no-pause)
