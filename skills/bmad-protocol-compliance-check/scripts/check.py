@@ -50,9 +50,11 @@ class ExpectedEntry:
 
 MANIFEST: list[ExpectedEntry] = [
     # Top-level step bullets (one per major protocol step).
+    # Step 4 (per-story User Review PAUSE) was removed in 2026-05 — visual
+    # review moved to post-ship per epic via bmad-epic-flow-demo. The
+    # manifest expects 12 entries now (was 13).
     ExpectedEntry("Step 2 Saneh — AC Map", r"step 2 saneh", is_regex=True),
     ExpectedEntry("Step 3 AC-Compliance — PASS", r"step 3 ac.?compliance.*pass", is_regex=True),
-    ExpectedEntry("Step 4 User Review — approved", r"step 4 user review.*approved", is_regex=True),
     ExpectedEntry("Step 5 Simplify (header)", r"step 5 simplify", is_regex=True),
     ExpectedEntry("Step 6 Code Review (header)", r"step 6 code review", is_regex=True),
     ExpectedEntry("Step 7 PR Review (header)", r"step 7 pr review", is_regex=True),

@@ -60,22 +60,23 @@ See [references/story-protocol.md](skills/bmad-roadmap-v5/references/story-proto
 1. **Branch** — `git checkout -b epic-{N}/story-{N.M}-{slug}`
 2. **Saneh** — full-stack build (UI + API + DB + seeder + tests). Starts dev server. Outputs **AC Implementation Map**.
 3. **AC-Compliance check** — automated script verifies every AC in the story file has an entry in Saneh's map. Halts on any missing AC.
-4. **User Review [PAUSE]** — orchestrator prints `/impeccable live` iteration prompt for a new chat. User iterates visually until satisfied, returns and types `approved`.
+4. **(removed)** — per-story User Review PAUSE removed in 2026-05. Visual review now happens once per epic, post-ship, via `bmad-epic-flow-demo` (see End-of-each-epic step `d`). Saneh's output flows directly into Step 5.
 5. **Simplify (in-context skills)** — sequential `bmad-light-review-code-reuse` + `bmad-light-review-code-quality` (2 skills, not 3 — efficiency was merged into code-quality in 2026-05). Autonomous (no user prompts). Findings auto-applied per severity policy; judgment calls logged to story file's `## Autonomous Decisions` section instead of pausing.
 6. **Code Review (in-context skills)** — sequential `bmad-review-adversarial-general` (Blind Hunter, capped at 12 findings) + `bmad-review-edge-case-hunter` + `bmad-light-review-acceptance`. Autonomous, same DECIDE-AND-LOG pattern.
 7. **PR Review (in-context skills)** — `bmad-light-review-silent-failure`. Autonomous, same pattern. (`bmad-light-review-pr-tests` retired earlier — was driving over-testing pressure. Legacy `pr-review-toolkit` agents intentionally dropped; invoke manually if a specific story needs them.)
 8. **Verify** — typecheck + lint + tests.
 9. **`/commit-story`** — local commit on the epic branch. **Step 9.0 calls `bmad-protocol-compliance-check`** which reads the story file's `## Protocol Audit Trail` section and HALTS the commit if any expected step entry is missing. No `--skip-compliance` flag — the gate is mandatory because it's the entire defence against autonomous-skip bugs in `/goal` mode. No push, no PR (those happen at end-of-epic via `/ship-epic`).
 
-**Audit Trail discipline:** every story file ends with a `## Protocol Audit Trail` section. The orchestrator appends one `- [x] Step N <name>` bullet the same turn each step finishes. The compliance check at Step 9.0 grep's this section and verifies the manifest (Saneh + AC-Compliance + User Review + Simplify×2 + Code Review×3 + PR Review×1 + Verify). When a skill is silently skipped, the missing bullet trips the gate at the LOCAL story — not three stories later in a retrospective.
+**Audit Trail discipline:** every story file ends with a `## Protocol Audit Trail` section. The orchestrator appends one `- [x] Step N <name>` bullet the same turn each step finishes. The compliance check at Step 9.0 grep's this section and verifies the 12-entry manifest (Saneh + AC-Compliance + Simplify×2 + Code Review×3 + PR Review×1 + Verify + 4 step headers). When a skill is silently skipped, the missing bullet trips the gate at the LOCAL story — not three stories later in a retrospective.
 
 ### End-of-each-epic
 
 a. `/bmad-extract-deferrals` — walk the epic's commit messages, extract `**MEDIUM/LOW:**` + `Deferred:` sections, append to `_bmad-output/implementation-artifacts/deferred-work.md`. Catches up the registry from protocol output that lived in commit message bodies.
 b. `/bmad-testarch-trace` — traceability matrix + quality gate. Reads `deferred-work.md` and surfaces a Deferrals Registry section (by source / severity / owning future story + red-flag for no-owner entries).
 c. `/ship-epic` — rebase main, push the epic branch, open + merge the PR, sync local main.
+d. **`bmad-epic-flow-demo`** — post-ship visual review (replaces the per-story Step 4 PAUSE). Detects new routes added in the epic; opens `epic-{N}-polish` branch from main; prints routes + suggested journey + `/impeccable live` paste-ready prompt; pauses for the user. On `approved` with polish commits: ships them via their own squash-merge PR. On `approved` with no commits: deletes the empty branch. Pure-infra epics (no UI surface) skip the pause and end immediately. **This is the ONLY user pause in the autonomous `/goal` flow.**
 
-**Exit:** every story in sprint-status.yaml is `done`.
+**Exit:** every story in sprint-status.yaml is `done` AND every epic's `polish_status` is recorded in roadmap-progress.yaml.
 
 ---
 

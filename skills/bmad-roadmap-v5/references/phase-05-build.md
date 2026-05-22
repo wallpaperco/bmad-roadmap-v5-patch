@@ -34,25 +34,27 @@ Full protocol in `./story-protocol.md`. Summary:
 1. **Branch** — `epic-{N}` (created on first story of the epic; subsequent stories check out the same branch)
 2. **Saneh — Full-Stack Build** — reads UX spec + design system from codebase. Test Writing Discipline enforced (1-3 tests per AC, no E2E, skip visual-only ACs).
 3. **AC-Compliance check** (automated script — verifies every story AC has an entry in Saneh's Implementation Map)
-4. **User Review [PAUSE]** — orchestrator prints `/impeccable live` iteration prompt for a new chat; waits for `approved` (**only intentional stop in the protocol**). Signals: `approved` or `/bmad-business-change`. `rebuild:` is intentionally absent — user iterates in the other chat directly.
-5. **Simplify** — sequential in-context skills (code-reuse + code-quality + efficiency) — autonomous, no user prompts
+4. **(removed — per-story User Review PAUSE)** — visual review now happens post-ship per epic via `bmad-epic-flow-demo` (see § Post-ship review below). Saneh's output flows directly into Step 5 without a pause. The whole story protocol is now autonomous under `/goal`.
+5. **Simplify** — sequential in-context skills (code-reuse + code-quality, efficiency merged into code-quality in 2026-05) — autonomous, no user prompts
 6. **Code Review** — sequential in-context skills (adversarial-general / Blind Hunter + edge-case-hunter + light-review-acceptance) — autonomous, no user prompts
 7. **PR Review** — single in-context skill (light-review-silent-failure). pr-tests reviewer retired in this revision to avoid over-testing pressure.
 8. **Verify** — typecheck + lint + tests
-9. **`/commit-story`** — local commit on `epic-{N}` branch. **NO push, NO PR.** Push + PR happen once at end-of-epic.
+9. **`/commit-story`** — local commit on `epic-{N}` branch. **Step 9.0 invokes `bmad-protocol-compliance-check`** which verifies the story file's `## Protocol Audit Trail` section has every expected entry — halts the commit if any step's bullet is missing. **NO push, NO PR.** Push + PR happen once at end-of-epic.
 
-Steps 5–7 use the DECIDE-AND-LOG pattern (any judgment call is recorded in the story file's "## Autonomous Decisions" section instead of pausing for user input). The user reviews these decisions at PR review time (end-of-epic).
+Steps 5–7 use the DECIDE-AND-LOG pattern (any judgment call is recorded in the story file's "## Autonomous Decisions" section instead of pausing for user input). The user reviews these decisions at post-ship visual review time (end-of-epic).
 
-After Step 9, the story is marked `committed` in both `sprint-status.yaml` and `roadmap-progress.yaml`. The orchestrator prints a short notice and STOPS — the user decides when to start the next story.
+After Step 9, the story is marked `committed` in both `sprint-status.yaml` and `roadmap-progress.yaml`. Under `/goal` the orchestrator advances to the next story in the same epic without stopping; without `/goal` it prints a short notice and stops.
 
 ---
 
 ## Sub-step D — End-of-epic
 
-Triggered when the last story of an epic is `committed`. Run:
+Triggered when the last story of an epic is `committed`. Run in order:
 
-1. **`/bmad-testarch-trace`** — produce traceability matrix (AC ↔ test) + quality-gate decision for the entire epic.
-2. **`/ship-epic`** — rebase main → push `epic-{N}` → open one PR for the whole epic → wait for CI → squash-merge → sync local main.
+1. **`/bmad-extract-deferrals`** — walk the epic's commit messages, extract deferred findings into `_bmad-output/implementation-artifacts/deferred-work.md`. Catches the LOW/MEDIUM findings the per-story protocol punted via the auto-fix policy.
+2. **`/bmad-testarch-trace`** — produce traceability matrix (AC ↔ test) + quality-gate decision for the entire epic. Reads `deferred-work.md` and surfaces a Deferrals Registry section.
+3. **`/ship-epic`** — rebase main → push `epic-{N}` → open one PR for the whole epic → wait for CI → squash-merge → sync local main.
+4. **`/bmad-epic-flow-demo`** — post-ship visual review cycle (NEW — replaces the per-story Step 4 PAUSE that was removed in this revision). See § Post-ship review below.
 
 `/ship-epic` updates `roadmap-progress.yaml`:
 ```yaml
@@ -65,11 +67,43 @@ Triggered when the last story of an epic is `committed`. Run:
       pr_url: "<PR URL>"
 ```
 
-It also flips every story in the epic from `committed` → `shipped`.
+It also flips every story in the epic from `committed` → `shipped`. Then `bmad-epic-flow-demo` adds `polish_status` (`shipped` / `skipped-no-ui` / `skipped-no-changes` / `skipped-user-abandon`) and `polish_pr_url` / `polish_merge_sha` when applicable.
 
 Advance to the next epic's first story (Sub-step B) — or, if it was the last epic, mark Phase 5 complete and advance to Phase 6.
 
 **Retrospective is intentionally NOT part of this flow** — removed in this revision to keep end-of-epic lean. If you want a retro for a specific epic, invoke `/bmad-retrospective` manually before `/ship-epic`.
+
+---
+
+## Post-ship review (Sub-step D, step 4)
+
+`bmad-epic-flow-demo` runs IMMEDIATELY after `/ship-epic` returns success. It's the only PAUSE in the whole epic flow — every other step (per-story protocol + extract-deferrals + trace + ship) runs autonomously under `/goal`.
+
+**What it does:**
+1. Detects the epic's UI surface area (new pages/routes between the merge base and main).
+2. If zero new routes (pure-infra epic like `Epic 1: Platform Foundation`) → emits a one-line summary and ends. No polish branch, no PAUSE. The orchestrator advances to Epic {N+1} immediately.
+3. Otherwise:
+   - Creates `epic-{N}-polish` branch from main (empty)
+   - Pushes the empty branch
+   - Prints: routes added + suggested journey + `/impeccable live` paste-ready prompt
+   - PAUSES waiting for the user signal
+4. User iterates in a separate chat against `epic-{N}-polish`. The orchestrator goes idle in this chat.
+5. User returns and signals:
+   - `approved` → if the polish branch has commits: push + open PR + watch CI + squash-merge + delete branch + sync main. If no commits: delete the empty branch and close the epic.
+   - `skip-polish` → abandon any commits, delete the branch, close the epic.
+   - `iterate <note>` → reprint the demo prompt (e.g., after losing the iteration chat).
+
+**Why post-ship rather than per-story:**
+- `/goal Epic N` runs end-to-end autonomously through merge — no per-story pause, no `/goal` interruption.
+- Visual review happens against `main` (production-like), not a transient branch.
+- Iterations create their own commit history on `epic-{N}-polish` → main stays clean.
+- CI runs once at the end of polish, not per-iteration commit.
+- Pure-infra epics (no UI surface) skip the PAUSE entirely.
+
+**Branch / PR convention:**
+- Branch name: `epic-{N}-polish`
+- PR title: `Epic {N}: visual polish`
+- Merge: squash (mirrors `/ship-epic` convention; main stays clean)
 
 ---
 

@@ -29,6 +29,7 @@ SKILLS=(
     bmad-light-review-silent-failure
     bmad-extract-deferrals
     bmad-protocol-compliance-check
+    bmad-epic-flow-demo
     commit-story
     ship-epic
 )

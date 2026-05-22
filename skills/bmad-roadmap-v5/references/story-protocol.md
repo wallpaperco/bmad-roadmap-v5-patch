@@ -25,7 +25,6 @@ Each story file MUST end with a section titled `## Protocol Audit Trail`. As eve
 
 - [x] Step 2 Saneh — AC Map (12 ACs mapped, 0 deferred)
 - [x] Step 3 AC-Compliance — PASS
-- [x] Step 4 User Review — approved at 2026-MM-DDTHH:MM
 - [x] Step 5 Simplify
   - [x] code-reuse — 2 findings, 1 fixed, 1 deferred
   - [x] code-quality — 8 findings, 5 fixed, 3 deferred
@@ -223,28 +222,22 @@ Outcomes:
 
 ---
 
-## Step 4 — User Review [PAUSE]
+## Step 4 — (removed: per-story User Review PAUSE)
 
-The orchestrator prints the iteration prompt (template in `handoff-iteration-prompt.md`) with placeholders filled. Block:
+**As of 2026-05, the per-story visual-review PAUSE is removed.** Visual review now happens once per epic, AFTER `/ship-epic` lands the epic on main — via `bmad-epic-flow-demo` (see `phase-05-build.md` § Post-ship review).
 
-```
-✅ Story {X.Y} built. Dev server running at http://localhost:{port}.
+**Why the move:**
+- Epics in v5 are journey-aligned (Epic 2 = browse projects, Epic 3 = search/compare, etc.). The right review granularity is the journey, not the per-story screen.
+- With a design system already wired in code (tokens + Egyptian-Native wrappers + shadcn/ui), per-screen pixel review per story has minimal catch rate vs the overhead it imposes.
+- Per-story PAUSE was breaking `/goal` autonomy — the whole point of `/goal Epic N` is "build the epic end-to-end without my involvement, then show me".
+- Pure-infrastructure epics (Epic 1 style: auth, deploy, telemetry, admin skeleton) have nothing meaningful to review per story — `bmad-epic-flow-demo` skips them automatically when no UI routes were added.
 
-📋 PASTE THIS IN A NEW CHAT TO ITERATE WITH /impeccable live:
-═══════════════════════════════════════════════════════════════
-<contents of handoff-iteration-prompt.md with placeholders resolved>
-═══════════════════════════════════════════════════════════════
-END — copy everything between the lines above.
+**What replaces it:**
+- During the story: NO PAUSE. Saneh's output flows directly from Step 3 → Step 5.
+- After `/ship-epic` for the epic: `bmad-epic-flow-demo` opens `epic-{N}-polish` branch, prints the journey + routes added + `/impeccable live` paste-ready prompt, pauses for the user. Iterations land on the polish branch (separate chat), get shipped via their own squash-merge PR when the user signals `approved`.
+- `/bmad-business-change` is still available as an escape — the orchestrator listens for it any time. On hand-off + return, the affected story rebuilds from Step 2.
 
-Waiting for your "approved" signal in this chat…
-```
-
-The orchestrator goes idle. The user iterates in a separate chat — that chat edits files directly. When the user is done, they return and type one of:
-
-- **`approved`** → mark step done, proceed to Step 5. The current file state is what proceeds. **Append to Audit Trail:** `- [x] Step 4 User Review — approved at <ISO timestamp>`
-- **`/bmad-business-change ...`** → orchestrator hands off to that skill; on return, Step 2 reruns (the business-change cascade may invalidate the build).
-
-The story state stays at Step 4 until one of those signals lands.
+**No Audit Trail entry for Step 4 anymore.** The compliance check manifest at Step 9.0 expects 12 entries now (down from 13). Skip directly to Step 5 — that's where the autonomous review block starts.
 
 ---
 

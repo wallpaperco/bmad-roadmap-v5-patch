@@ -67,6 +67,7 @@ skills/
 ├── bmad-light-review-silent-failure/     # Story Protocol Step 7 (PR Review)
 ├── bmad-extract-deferrals/               # End-of-epic — extract deferrals from commits
 ├── bmad-protocol-compliance-check/       # Pre-commit gate — verifies Audit Trail
+├── bmad-epic-flow-demo/                  # Post-ship visual review + polish-branch cycle
 ├── commit-story/                          # v5 per-story commit helper (calls compliance gate)
 └── ship-epic/                             # v5 end-of-epic ship flow
 ```
