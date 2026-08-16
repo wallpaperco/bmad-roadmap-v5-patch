@@ -6,7 +6,7 @@ Printed by the orchestrator at Story Protocol Step 4. The user copies it into a 
 
 | Placeholder | Resolved from | Example |
 |---|---|---|
-| `{project-root}` | working directory | `/Users/abozaid/Desktop/workspace/abozaid/baseir` |
+| `{project-root}` | working directory | `/Users/abozaid/Desktop/workspace/wallpaper/baseir` |
 | `{X.Y}` | story ID | `2.7` |
 | `{story-title}` | story file frontmatter `title:` | `Mobile + WhatsApp OTP Registration` |
 | `{story-file-path}` | absolute path to story md | `_bmad-output/implementation-artifacts/stories/2.7-mobile-otp-registration.md` |
