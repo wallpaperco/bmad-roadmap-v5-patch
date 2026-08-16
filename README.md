@@ -30,7 +30,7 @@
 
 ```bash
 cd /path/to/project
-bash ~/Desktop/workspace/abozaid/bmad-roadmap-v5-patch/install.sh
+bash ~/Desktop/workspace/wallpaper/bmad-roadmap-v5-patch/install.sh
 ```
 
 The installer is idempotent — re-run anytime. It copies (or symlinks with `--symlink`) the `bmad-roadmap-v5` skill into `.claude/skills/`.

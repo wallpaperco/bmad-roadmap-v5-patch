@@ -51,7 +51,7 @@
 9. **Update global CLAUDE.md `# Deployed Apps` table** — add the new project:
    | App | Domain | Server Path | GitHub Repo | GHCR Prefix |
    |---|---|---|---|---|
-   | {project} | {domain} | /opt/apps/{project}/ | abozaid-tech/{repo} | ghcr.io/abozaid-tech/{repo}/ |
+   | {project} | {domain} | /opt/apps/{project}/ | wallpaperco/{repo} | ghcr.io/wallpaperco/{repo}/ |
 
 ---
 
