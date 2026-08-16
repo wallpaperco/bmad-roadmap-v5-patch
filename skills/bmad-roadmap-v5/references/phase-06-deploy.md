@@ -13,7 +13,7 @@
    ssh root@64.226.92.112
    mkdir -p /opt/apps/{project-name}
    cd /opt/apps/{project-name}
-   git clone git@github.com:abozaid-tech/{project-repo}.git .
+   git clone git@github.com:wallpaperco/{project-repo}.git .
    ```
 
 2. **Caddy reverse proxy** — add domain to `/opt/caddy/Caddyfile`:
